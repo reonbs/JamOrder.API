@@ -59,7 +59,6 @@ namespace JamOrder.API
                 _logger.LogError(ex,"<<<<<<<<<<<<<<< authorisation failed >>>>>>>>>>>>>>>>");
                 return AuthenticateResult.Fail("Unauthorized");
             }
-
         }
 
         private AuthenticateResult ValidateToken(string token)

@@ -13,7 +13,7 @@ namespace JamOrder.API.Encryption
         private readonly AppSettings _appSettings;
         #endregion
 
-        public AesEncryptionProvider( IOptions<AppSettings> appSettings)
+        public AesEncryptionProvider(IOptions<AppSettings> appSettings)
         {
             _appSettings = appSettings.Value;
         }
