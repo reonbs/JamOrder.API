@@ -6,7 +6,7 @@ namespace JamOrder.API
     public interface IUserService
     {
         Task<ApiReponse<LoginResponseDto>> LoginAsync(LoginRequestDto loginDto);
-        ApiReponse<object> LogOut(LogoutRequestDto logoutRequestDto);
+        ApiReponse<object> LogOut();
         Task<ApiReponse<object>> Register(RegisterRequestDto registerRequestDto);
     }
 }

@@ -28,7 +28,7 @@ namespace JamOrder.API.Controllers
         {
             var result = await _userService.LoginAsync(loginRequestDto);
 
-            return StatusCode(result.statusCode, result);
+            return StatusCode(result.StatusCode, result);
         }
 
         /// <summary>
@@ -50,8 +50,7 @@ namespace JamOrder.API.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto registerRequestDto)
         {
             var result = await _userService.Register(registerRequestDto);
-
-            return StatusCode(result.statusCode, result);
+            return StatusCode(result.StatusCode, result);
         }
 
         /// <summary>
@@ -60,11 +59,10 @@ namespace JamOrder.API.Controllers
         /// <param name="logoutRequestDto"></param>
         /// <returns></returns>
         [HttpDelete("logout")]
-        public IActionResult Register([FromBody] LogoutRequestDto logoutRequestDto)
+        public IActionResult Logout()
         {
-            var result = _userService.LogOut(logoutRequestDto);
-
-            return StatusCode(result.statusCode, result);
+            var result = _userService.LogOut();
+            return StatusCode(result.StatusCode, result);
         }
     }
 }

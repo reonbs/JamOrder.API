@@ -1,44 +1,33 @@
-﻿using JamOrder.API.Dtos;
-using JamOrder.API.Encryption;
+﻿using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using JamOrder.API.Dtos;
 using JamOrder.API.Entities;
 using JamOrder.API.Extensions;
-using JamOrder.API.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace JamOrder.API.Service
 {
     public class UserService : IUserService
     {
         #region Declares
-        private readonly IMemoryCache _memoryCache;
-        private readonly IEncryptionProvider _encryptionProvider;
+        private readonly ITokenService _tokenService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IResponseService _responseService;
-        private readonly ILogger<string> _logger;
+        private readonly ILogger<UserService> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly AppSettings _appSettings;
         #endregion
 
-        public UserService(
-            IMemoryCache memoryCache,
-            IEncryptionProvider encryptionProvider,
-            UserManager<ApplicationUser> userManager,
-            IResponseService responseService, IOptions<AppSettings> appSettings, ILogger<string> logger, IHttpContextAccessor httpContextAccessor)
+        public UserService(ITokenService tokenService, UserManager<ApplicationUser> userManager, IResponseService responseService, ILogger<UserService> logger, IHttpContextAccessor httpContextAccessor)
         {
-            _memoryCache = memoryCache;
-            _encryptionProvider = encryptionProvider;
+            _tokenService = tokenService;
             _userManager = userManager;
             _responseService = responseService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
-            _appSettings = appSettings.Value;
         }
 
         public async Task<ApiReponse<object>> Register(RegisterRequestDto registerRequestDto)
@@ -81,46 +70,51 @@ namespace JamOrder.API.Service
                 if (!isValidPassword)
                     return _responseService.Response<LoginResponseDto>(null, "username or password is incorrect", 400);
 
-                var token = Guid.NewGuid().ToString();
-                var tokenExpiryTime = TimeSpan.FromMinutes(_appSettings.TokenExpiry);
+                var generatedToken = _tokenService.GenerateToken(loginDto.UserName);
 
-                var encryTedToken = _encryptionProvider.Encrypt(token);
+                if (generatedToken == null)
+                    return _responseService.Response<LoginResponseDto>(null, "unable to retrieve token", 400);
 
                 var loginResponse = new LoginResponseDto
                 {
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     UserName = user.UserName,
-                    AccessToken = encryTedToken,
-                    ExpiresIn = tokenExpiryTime.TotalMilliseconds.ToString()
+                    AccessToken = generatedToken.AccessToken,
+                    ExpiresIn = generatedToken.ExpireIn
                 };
 
                 return _responseService.Response(loginResponse, "login successful", 200);
             }
             catch (Exception ex)
             {
-                _logger.LogError("<<<<<<<<<<<<<<< login failed >>>>>>>>>>>>>>>>>>",ex);
+                _logger.LogError("<<<<<<<<<<<<<<< login failed >>>>>>>>>>>>>>>>>>", ex);
                 return _responseService.Response<LoginResponseDto>(null, "login failed", 500);
             }
         }
 
-        public ApiReponse<object> LogOut(LogoutRequestDto logoutRequestDto)
+        public ApiReponse<object> LogOut()
         {
             try
             {
-                if (logoutRequestDto == null)
-                    return _responseService.Response<object>(null, "invalid request", 400);
+                //get access token
+                var authorizationHeader = _httpContextAccessor.HttpContext.Request.Headers["Authorization"];
 
-                var decryptedToken = _encryptionProvider.Decrypt(logoutRequestDto.AccessToken);
+                string accessToken = authorizationHeader.First()?.Substring("Bearer".Length)?.Trim();
 
-                var token = _memoryCache.Get<string>(decryptedToken);
+                //get user claim
+                var user = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Name);
 
-                if (token == null)
-                    return _responseService.Response<object>(null, "logout failed", 400);
+                if (user != null)
+                {
+                    //destroy token
+                    var detroyToken = _tokenService.DestroyToken(user.Value, accessToken);
 
-                _memoryCache.Remove(decryptedToken);
+                    if (detroyToken)
+                        return _responseService.Response<object>(null, "user logout successful", 200);
+                }
 
-                return _responseService.Response<object>(null, "user logout successful", 200);
+                return _responseService.Response<object>(null, "logout failed", 400);
             }
             catch (Exception ex)
             {

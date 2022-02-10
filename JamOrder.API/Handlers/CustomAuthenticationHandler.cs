@@ -20,12 +20,7 @@ namespace JamOrder.API
         private readonly ILogger<string> _logger;
         #endregion
 
-        public CustomAuthenticationHandler(
-            IOptionsMonitor<BasicAuthenticationOptions> options, 
-            ILoggerFactory loggerFactory, 
-            UrlEncoder encoder, 
-            ISystemClock clock,
-            IMemoryCache memoryCache, IEncryptionProvider encryptionProvider, ILogger<string> logger) : base(options, loggerFactory, encoder, clock)
+        public CustomAuthenticationHandler(IOptionsMonitor<BasicAuthenticationOptions> options, ILoggerFactory loggerFactory, UrlEncoder encoder, ISystemClock clock, IMemoryCache memoryCache, IEncryptionProvider encryptionProvider, ILogger<string> logger) : base(options, loggerFactory, encoder, clock)
         {
             _memoryCache = memoryCache;
             _encryptionProvider = encryptionProvider;

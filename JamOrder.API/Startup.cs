@@ -27,11 +27,13 @@ namespace JamOrder.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
+            services.AddHttpContextAccessor();
             services.AddMemoryCache();
             services.AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("JamOrderDb"));
             services.AddScoped<AppDbContext>();
             services.AddTransient<IResponseService, ResponseService>();
             services.AddTransient<IEncryptionProvider, AesEncryptionProvider>();
+            services.AddTransient<ITokenService, TokenService>();
             services.AddIdentityCore<ApplicationUser>()
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddSignInManager()
